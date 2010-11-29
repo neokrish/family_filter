@@ -1,10 +1,53 @@
 <?php
 
 function family_filter_menu() {
+  $items = array();
+
+  $items['family-filter'] = array(
+    'title' => 'Family Filter', 
+    'page callback' => 'family_filter_switch', 
+    'access arguments' => array('access content'), 
+    'type' => MENU_SUGGESTED_ITEM,
+  );
+
+  return $items;
+}
+
+function family_filter_switch(&form_state) {
+
+  return $form;
+}
+
+function family_filter_switch_submit($form, &$form_state) {
 
 }
 
-function family_filter_block() {
-
+function family_filter_menu_need_destination() {
+  return array('family-filter');
 }
 
+/**
+ * An implementation of hook_menu_link_alter(). Flag this link as needing alter at display time.
+ * This is more robust that setting alter in hook_menu(). See devel_translated_menu_link_alter().
+ *
+ **/
+function family_filter_menu_link_alter(&$item, $menu) {
+  if (in_array($item['link_path'], family_filter_menu_need_destination())) {
+    $item['options']['alter'] = TRUE;
+  }
+}
+
+/**
+ * An implementation of hook_translated_menu_item_alter(). Append dynamic
+ * querystring 'destination' to several of our own menu items.
+ *
+ **/
+function family_filter_translated_menu_link_alter(&$item) {
+  if (in_array($item['href'], devel_menu_need_destination())) {
+    $item['localized_options']['query'] = drupal_get_destination();
+  }
+}
+function family_filter_access() {
+  
+  
+}
