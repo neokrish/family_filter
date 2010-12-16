@@ -5,7 +5,8 @@ function family_filter_menu() {
 
   $items['family-filter'] = array(
     'title' => 'Family Filter', 
-    'page callback' => 'family_filter_switch', 
+    'page callback' => 'drupal_get_form',    
+    'page arguments' => array('family_filter_switch'),
     'access arguments' => array('access content'), 
     'type' => MENU_SUGGESTED_ITEM,
   );
@@ -13,13 +14,42 @@ function family_filter_menu() {
   return $items;
 }
 
-function family_filter_switch(&form_state) {
-
-  return $form;
+function family_filter_switch(&$form_state) {
+$form['mature_content_notice'] = array(
+  '#value' => 'Please select below your choice on viewing mature content.',
+);
+$form['mature_content_access'] = array(
+  '#type' => 'radios',
+  '#title' => t('Access Mature Content'),
+  '#default_value' => ($_SESSION['mature_content'] == '0') ? '1' : '0',
+  '#options' => array(t('Yes'), t('No')),
+  );
+$form['submit'] = array(
+  '#type' => 'submit',
+  '#value' => t('Save'),
+);
+   return $form;
 }
 
 function family_filter_switch_submit($form, &$form_state) {
-
+  global $user;
+  $_SESSION['mature_content']  = ($form_state['values']['mature_content_access'] == '0') ? '1' : '0';
+   if($user->uid) {
+     $data = new stdClass();
+     $data->uid = $user->uid;
+     $data->ff_value = $_SESSION['mature_content'];
+     //check if we are updating or inserting new record.
+     $query = "SELECT uid FROM {family_filter_preference} WHERE uid = %d";
+     $result = db_fetch_object(db_query($query, $user->uid));
+     $table = 'family_filter_preference';
+     if($result) {
+       drupal_set_message('we are updating preference.');
+       drupal_write_record($table,$data,array('uid'));
+     } else {
+       drupal_set_message('we are inseting preference.');
+       drupal_write_record($table,$data);      
+     }
+   } 
 }
 
 function family_filter_menu_need_destination() {
@@ -47,7 +77,12 @@ function family_filter_translated_menu_link_alter(&$item) {
     $item['localized_options']['query'] = drupal_get_destination();
   }
 }
-function family_filter_access() {
-  
-  
+
+function family_filter_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  if($op == 'view') { // we are concerned about view only.
+    if($flags = flag_get_content_flags('node', $node->nid,'mature')) {
+    $node->content['body']['#value'] = "This content has been flagged as Mature Content by our community. To views this content, please turn OFF Mature Content filter at ....";
+    //dsm($node);
+    } 
+  }
 }
